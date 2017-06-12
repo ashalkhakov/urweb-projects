@@ -1,0 +1,8 @@
+database dbname=test
+sql app.sql
+
+$/list
+$/char
+$/string
+$/option
+app
