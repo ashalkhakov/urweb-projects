@@ -1,9 +1,11 @@
 database dbname=test
-library ../grid/lib
 sql app.sql
+library pac
+library enum
 
 $/list
 $/char
 $/string
 $/option
+treeFun
 app
