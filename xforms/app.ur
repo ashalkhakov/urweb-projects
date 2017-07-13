@@ -169,6 +169,204 @@ fun ex_button () =
           </xml>}/>
       </body>
     </xml>
+
+(*
+
+next:
+- balance demo
+- meter entry
+
+http://www.impredicative.com/pipermail/ur/2011-October/000817.html
+
+ *)
+
+datatype calc_state = CSadd | CSsub | CSmul | CSdiv
+
+(* TODO: handling of xf:switch/xf:case *)
+                                          
+fun ex_calculator () =
+
+    let
+
+        fun create () =
+            scr <- source 0.0;
+            scrbuf <- source 0.0;
+            first <- source 0.0;
+            second <- source 0.0;
+            memory <- source 0.0;
+            result <- source 0.0;
+            state <- source CSadd;
+            return { State = state, Screen = scr, ScreenBuffer = scrbuf, First = first, Second = second, Memory = memory, Result = result }
+        fun clear calc =
+            set calc.First 0.0;
+            set calc.Second 0.0;
+            set calc.Result 0.0;
+            set calc.Screen 0.0;
+            set calc.ScreenBuffer 0.0;
+            set calc.State CSadd
+        fun memclear calc =
+            set calc.Memory 0.0
+        fun digit calc d =
+            sb <- get calc.ScreenBuffer;
+            let
+                val ns = sb * 10.0 + d
+            in
+                set calc.ScreenBuffer ns;
+                set calc.Screen ns
+            end
+        fun divide calc =
+            s <- get calc.Screen;
+            set calc.First s;
+            set calc.ScreenBuffer 0.0;
+            set calc.State CSdiv
+        fun memrecall calc =
+            m <- get calc.Memory;
+            set calc.ScreenBuffer m;
+            set calc.Screen m;
+            set calc.ScreenBuffer 0.0
+        fun multiply calc =
+            s <- get calc.Screen;
+            set calc.First s;
+            set calc.ScreenBuffer 0.0;
+            set calc.State CSmul
+        fun memsave calc =
+            s <- get calc.Screen;
+            set calc.Memory s;
+            set calc.ScreenBuffer 0.0
+        fun subtract calc =
+            s <- get calc.Screen;
+            set calc.First s;
+            set calc.ScreenBuffer 0.0;
+            set calc.State CSsub
+        fun recip calc =
+            s <- get calc.Screen;
+            set calc.Screen (1.0 / s)
+        fun memadd calc =
+            m <- get calc.Memory;
+            s <- get calc.Screen;
+            set calc.Memory (m + s);
+            set calc.ScreenBuffer 0.0
+        fun invert calc =
+            s <- get calc.Screen;
+            set calc.Screen (-s)
+        fun add calc =
+            s <- get calc.Screen;
+            set calc.First s;
+            set calc.ScreenBuffer 0.0;
+            set calc.State CSadd
+        fun apply calc =
+            cs <- get calc.State;
+            s <- get calc.Screen;
+            set calc.Second s;
+            f <- get calc.First;
+            (case cs of
+                 CSadd => set calc.Result (f + s)
+               | CSsub => set calc.Result (f - s)
+               | CSmul => set calc.Result (f * s)
+               | CSdiv => set calc.Result (f / s));
+            r <- get calc.Result;
+            set calc.Screen r;
+            set calc.ScreenBuffer 0.0
+
+    in
+        return <xml>
+          <body>
+            <active code={
+        calc <- create ();
+        return <xml>
+              <h3>Calculator</h3>
+
+              <table border=1>
+                <tr>
+                  <td align="right" colspan=6>{output (r <- signal calc.Screen; return (show r))}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <label>M:</label> {output (r <- signal calc.Memory; return (show r))}
+                  </td>
+                  <td colspan=3></td>
+                  <td colspan=2>
+                    <button onclick={fn _ => clear calc}>Clear</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <button onclick={fn _ => memclear calc}>MC</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => digit calc 7.0}>7</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => digit calc 8.0}>8</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => digit calc 9.0}>9</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => divide calc}>/</button>
+                  </td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>
+                    <button onclick={fn _ => memrecall calc}>MR</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => digit calc 4.0}>4</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => digit calc 5.0}>5</button>
+                  </td>
+            	  <td>
+                    <button onclick={fn _ => digit calc 6.0}>6</button>
+                  </td>
+            	  <td>
+                    <button onclick={fn _ => multiply calc}>*</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <button onclick={fn _ => memsave calc}>MS</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => digit calc 1.0}>1</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => digit calc 2.0}>2</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => digit calc 3.0}>3</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => subtract calc}>-</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => recip calc}>1/x</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <button onclick={fn _ => memadd calc}>M+</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => digit calc 0.0}>0</button>
+                  </td>
+                  <td colspan=2>
+                    <button onclick={fn _ => invert calc}>+/-</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => add calc}>+</button>
+                  </td>
+                  <td>
+                    <button onclick={fn _ => apply calc}>=</button>
+                  </td>
+                </tr>
+              </table>
+            </xml>}/>
+            </body>
+          </xml>
+
+    end
     
 fun
 main () = return <xml>
@@ -186,5 +384,9 @@ main () = return <xml>
     <a link={ex_checkbox ()}>Checkbox</a>
     <a link={ex_select_model ()}>Select model</a>
     <a link={ex_button ()}>Button</a>
+
+    <p>Advanced examples</p>
+
+    <a link={ex_calculator ()}>Calculator</a>
   </body>
 </xml>
