@@ -552,6 +552,101 @@ return <xml>
      </body>
       </xml>
     end
+
+type book = { Year : int, Title : string }
+type writer = { FirstName : string, LastName : string, Books : list book }
+
+fun ex_writers_books books =
+    <xml>
+      <ul>{List.mapX (fn it => <xml><li>{[it.Year]} - {[it.Title]}</li></xml>) books}</ul>
+    </xml>
+              
+fun ex_writers () =
+    let
+
+        fun create () : transaction (source (list writer)) =
+            let
+                val res =
+                    { FirstName="Albert", LastName="Camus"
+                    , Books =
+                      { Year=1938, Title="Caligula"
+                      } ::
+                        { Year=1942, Title="L'étranger"
+                        } ::
+                        { Year=1947, Title="La peste"
+                        } ::
+                        { Year=1951, Title="L'homme révolté"
+                        } :: []
+                    } ::
+                      { FirstName="Blaise", LastName="Cendrars"
+                      , Books =
+                        { Year=1925, Title="L'or"
+                        } ::
+                          { Year=1948, Title="Bourlinguer"
+                          } :: []
+                      } ::
+                      { FirstName="Victor", LastName="Hugo"
+                      , Books =
+                        { Year=1831, Title="Notre-Dame de Paris"
+                        } ::
+                          { Year=1838, Title="Ruy Blas"
+                          } ::
+                          { Year=1856, Title="Les contemplations"
+                          } ::
+                          { Year=1862, Title="Les misérables"
+                          } :: []
+                      } ::
+                      { FirstName="Edmond", LastName="Rostand"
+                      , Books =
+                        { Year=1897, Title="Cyrano de Bergerac"
+                        } ::
+                          { Year=1904, Title="Chantecler"
+                          } :: []
+                      } ::
+                      { FirstName="Antoine", LastName="de Saint-Exupery"
+                      , Books =
+                        { Year=1931, Title="Vol de nuit"
+                        } ::
+                          { Year=1942, Title="Pilote de guerre"
+                          } ::
+                          { Year=1943, Title="Le petit prince"
+                          } :: []
+                      } :: []
+            in
+                source res
+            end
+    in
+    return <xml>
+      <body>
+        <active code={writers <- create ();
+                      return <xml>
+	                <h3>Writers (Subforms)</h3>
+
+                        <p>Note: subform functionality with delayed loading is not available</p>
+
+                        <dyn signal={wr <- signal writers;
+                                     return (List.mapX (fn it =>
+                                                   <xml>
+                                                     <active code={selected <- source False;
+                                                                   return <xml>
+			                                             <p>
+			                                               {[it.FirstName]}&#160;{[it.LastName]}&#160;
+                                                                       <dyn signal={
+                                                                       sel <- signal selected;
+                                                                       return <xml>
+                                                                         <button onclick={fn _ =>
+                                                                                             s <- get selected;
+                                                                                             set selected (not s)}>{[if not sel then "Show" else "Hide"]} Books</button>
+                                                                           {if sel then ex_writers_books it.Books else <xml/>}
+                                                                       </xml>}/>
+                                                                     </p>
+                                                                   </xml>}/>
+                                                   </xml>) wr)
+                                    }/>
+                      </xml>}/>
+      </body>
+    </xml>        
+    end
     
 fun
 main () = return <xml>
@@ -574,5 +669,6 @@ main () = return <xml>
 
     <a link={ex_calculator ()}>Calculator</a>
     <a link={ex_contact ()}>Contact</a>
+    <a link={ex_writers ()}>Writers</a>
   </body>
 </xml>
