@@ -1,4 +1,8 @@
 allow url http://www.agencexml.com/xsltforms.htm
 
+$/char
+$/string
 $/list
+$/monad
+$/json
 app
