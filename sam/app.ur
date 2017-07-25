@@ -171,6 +171,192 @@ return <xml>
   <body>
     <active code={
        model <- source (model_init ());
+       s <- source (<xml></xml>);
+       state_render model s;
+       return <xml><dyn signal={signal s}/></xml>
+    }/>
+  </body>
+  </xml>
+
+(* Todo MVC *)
+
+(* item list https://bitbucket.org/snippets/jdubray/zr9r6/item-list *)
+
+val counter_max = 10
+
+type item = { Id : int, Nam : string, Description : string }
+type newitem = { Nam : string, Description : string }
+val newitem_show : show newitem =
+    mkShow (fn i =>
+               "(name '" ^ i.Nam ^ "', desc '" ^ i.Description ^ ")")
+type model = {
+     Items : list item
+   , ItemId : int
+   , LastEdited : option item
+(*, LastDeleted : option int*)
+}
+val item_show : show item =
+    mkShow (fn i =>
+               "(id " ^ show i.Id ^ ", name '" ^ i.Nam ^ "', desc '" ^ i.Description ^ ")")
+
+val model_show : show model =
+    mkShow (fn x =>
+               "Items: "^ show x.Items
+               ^ ", ItemId: " ^ show x.ItemId
+               ^ ", LastEdited: " ^ show x.LastEdited)
+
+fun model_init () : model =
+    { Items = { Id = 2, Nam = "Item 2", Description = "This is a description" }
+                  :: { Id = 1, Nam = "Item 1", Description = "This is a description" }
+                  :: []
+    , ItemId = 3
+    , LastEdited = None
+    }
+
+datatype data =
+  DeletedItemId of int
+| SetLastEdited of item
+| EditItem of item
+| NewItem of newitem
+| Cancel
+val show_data : show data =
+    mkShow (fn d =>
+               case d of
+                   DeletedItemId i => "DeletedItemId("^ show i ^")"
+                 | SetLastEdited x => "SetLastEdited("^ show x ^")"
+                 | EditItem x => "EditItem("^ show x ^")"
+                 | NewItem x => "NewItem("^ show x ^")"
+                 | Cancel => "Cancel")
+  
+fun model_present (model : model) (data : data) : transaction model =
+    (*alert ("present:" ^ show data);*)
+    return (
+case data of
+  DeletedItemId id => assign model {Items = List.filter (fn x => (x.Id <> id)) model.Items}
+| SetLastEdited itm => assign model {LastEdited = Some itm}
+| EditItem itm =>
+  assign model {Items = List.mp (fn x => if x.Id = itm.Id then itm else x) model.Items, LastEdited = None}
+| NewItem itm => let
+      val id = model.ItemId
+  in
+      assign model {Items = ({Id = id} ++ itm) :: model.Items, ItemId = id+1}
+  end
+| Cancel => model
+    )
+
+type actions = { Edit : item -> transaction unit
+               , EditSave : item -> transaction unit
+               , Create : newitem -> transaction unit
+               , Delete : int -> transaction unit
+               , Cancel : transaction unit }
+
+fun my_active (c : transaction xbody): xbody =
+    <xml><active code={c}/></xml>
+
+fun mapX [a ::: Type] [ctx ::: {Unit}] (f : a -> xml ctx [] []) (ls : list a) : xml ctx [] [] =
+  List.mapX f (List.rev ls)
+    
+fun view_ready (model : model) (actions : actions) : xbody =
+    my_active (            
+
+    nameValue <- source (case model.LastEdited of Some x => x.Nam | None => "");
+    descriptionValue <- source (case model.LastEdited of Some x => x.Description | None => "");
+    id <- return (case model.LastEdited of Some x => Some x.Id | None => None);
+
+    return <xml>
+      <!-- class="mdl-cell mdl-cell- -6-col" -->
+      <div>
+{mapX
+     (fn e =>
+                   <xml>
+                     <h3 onclick={fn _ => (*alert ("edit" ^ show e);*) actions.Edit e}>{[e.Nam]}</h3>
+                     <p>{[e.Description]}</p>
+                     <button onclick={fn _ => actions.Delete e.Id}>Delete</button>
+                   </xml>)
+              model.Items}
+      </div>
+      <!-- class="mdl-cell mdl-cell- -6-col" -->
+      <div>
+        <ctextbox source={nameValue} placeholder="Name"/>
+        <ctextbox source={descriptionValue} placeholder="Description"/>
+        <button onclick={fn _ =>
+                            name <- get nameValue;
+                            description <- get descriptionValue;
+                            case id of
+                                Some id =>
+                                actions.EditSave { Id = id, Nam = name, Description = description }
+                              | None =>
+                                actions.Create { Nam = name, Description = description }}>Save</button>
+        <button onclick={fn _ => actions.Cancel}>Cancel</button>
+      </div>
+    </xml>
+    )
+
+fun view_init (model : model) (actions : actions) : xbody = view_ready model actions
+
+fun view_display (representation : xbody) (s : source xbody): transaction unit =
+  set s representation
+
+(* Derive the current state of the system *)
+fun state_ready (model : model) = True
+      
+(* Derive the state representation as a function of the systen
+ * control state
+ *)
+fun state_representation (model : model) (actions : actions) : xbody =
+  if state_ready model then view_ready model actions
+  else <xml>oops.. something went wrong, the system is in an invalid state</xml>  
+  
+fun present (model : source model) (s : source xbody) (d : data) : transaction unit =
+    m <- get model;
+    m1 <- model_present m d;
+    (*alert ("after: " ^ show m1);*)
+    set model m1;
+    state_render model s
+  
+and action_edit m s data =
+    present m s (SetLastEdited data)
+
+and action_create_save m s data =
+    present m s (NewItem data)
+
+and action_edit_save m s data =
+    present m s (EditItem data)
+
+and action_delete m s data =
+    present m s (DeletedItemId data)
+
+and action_cancel m s =
+    present m s Cancel
+
+and state_next_action m s = return ()
+
+and state_render (model : source model) (s : source xbody) : transaction unit =
+  let
+      val actions = {
+          Edit = fn itm => action_edit model s itm
+        , Create = fn itm => action_create_save model s itm
+        , EditSave = fn itm => action_edit_save model s itm
+        , Delete = fn id => action_delete model s id
+        , Cancel = action_cancel model s
+      }    
+  in
+      m <- get model;
+      let
+          val representation = state_representation m actions
+      in
+          view_display <xml>{representation}<br/>State: {[show m]}</xml> s;
+          state_next_action model s
+      end
+  end
+
+fun todosam () =
+return <xml>
+  <body>
+    <h1>Todo SAM</h1>
+    <p>Press on entry heading to edit it.</p>
+    <active code={
+       model <- source (model_init ());
        s <- source (<xml/>);
        state_render model s;
        return <xml><dyn signal={signal s}/></xml>
@@ -178,6 +364,10 @@ return <xml>
   </body>
   </xml>
 
-(* TODO: item list https://bitbucket.org/snippets/jdubray/zr9r6/item-list *)
-
-fun main () = rocket ()
+fun main () =
+  return <xml>
+    <body>
+      <a link={rocket ()}>Rocket</a>
+      <a link={todosam()}>TODO SAM</a>
+    </body>
+  </xml>
