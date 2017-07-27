@@ -188,7 +188,7 @@ type item = { Id : int, Nam : string, Description : string }
 type newitem = { Nam : string, Description : string }
 val newitem_show : show newitem =
     mkShow (fn i =>
-               "(name '" ^ i.Nam ^ "', desc '" ^ i.Description ^ ")")
+               "{name = '" ^ i.Nam ^ "', desc = '" ^ i.Description ^ "'}")
 type model = {
      Items : list item
    , ItemId : int
@@ -197,13 +197,14 @@ type model = {
 }
 val item_show : show item =
     mkShow (fn i =>
-               "(id " ^ show i.Id ^ ", name '" ^ i.Nam ^ "', desc '" ^ i.Description ^ ")")
+               "{id = " ^ show i.Id ^ ", name = '" ^ i.Nam ^ "', desc = '" ^ i.Description ^ "'}")
 
 val model_show : show model =
     mkShow (fn x =>
-               "Items: "^ show x.Items
-               ^ ", ItemId: " ^ show x.ItemId
-               ^ ", LastEdited: " ^ show x.LastEdited)
+               "{ items = "^ show x.Items
+               ^ ", itemId = " ^ show x.ItemId
+               ^ ", lastEdited = " ^ show x.LastEdited
+               ^ " }")
 
 fun model_init () : model =
     { Items = { Id = 2, Nam = "Item 2", Description = "This is a description" }
@@ -241,7 +242,7 @@ case data of
   in
       assign model {Items = ({Id = id} ++ itm) :: model.Items, ItemId = id+1}
   end
-| Cancel => model
+| Cancel => assign model {LastEdited = None}
     )
 
 type actions = { Edit : item -> transaction unit
