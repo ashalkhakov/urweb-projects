@@ -370,5 +370,6 @@ fun main () =
     <body>
       <a link={rocket ()}>Rocket</a>
       <a link={todosam()}>TODO SAM</a>
+      <a link={Child.child_instance ()}>Parent/child instance</a>
     </body>
   </xml>
