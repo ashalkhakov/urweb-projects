@@ -1,7 +1,17 @@
+database dbname=meter
+sql meter.sql
+library ../meta
+library ../enum
+rewrite style Screens/input_form input-form
+file /meterstyle.css meterstyle.css
 
 $/char
 $/string
 $/list
 $/monad
 $/json
+dataorg
+data
+types
+screens
 app
