@@ -24,27 +24,44 @@ fun eval t =
     return (MT.parse t)
 
 fun main () =
-txt <- source "";
-res <- source "";
-return <xml>
-  <body>
-    <h1>Shunting yard-based calculator example</h1>
+    txt <- source "";
+    res <- source "";
+    let
+        fun example (t : string) : xbody =
+            <xml>
+              <li><button onclick={fn _ => set txt t}>{[t]}</button></li>
+            </xml>
+    in
+        return <xml>
+          <body>
+            <h1>Shunting yard-based calculator example</h1>
 
-    <p>Please enter some simple arithmetic expressions
-      involving floating-point numbers and operators <strong>+</strong>, <strong>-</strong>, <strong>*</strong>, <strong>/</strong>,
-      <strong>^</strong> such as the ones below and hit "Evaluate"</p>
-    <p>Evaluation can also be carried out on the server.</p>
+            <p>Please enter some simple arithmetic expressions
+              involving floating-point numbers and operators (<strong>+</strong>, <strong>-</strong>, <strong>*</strong>, <strong>/</strong>,
+      <strong>^</strong>) such as the ones below and hit "Evaluate"</p>
+            <p>Evaluation can also be carried out on the server.</p>
 
-    <ul>
-      <li>2 + 2 * 2</li>
-      <li>3^4</li>
-      <li>(2 + 2) * 4</li>
-    </ul>
+            <ul>
+              {example "2 + 2 * 2"}
+              {example "3^4"}
+              {example "(2 + 2) * 4"}
+              {example "3 + 4 * 2 / (1 − 5) ^ 2 ^ 3"}
+            </ul>
 
-    <ctextbox source={txt}/>
-    <button onclick={fn _ => t <- get txt; e <- return (MT.parse t); set res (show e)}>Evaluate</button>
-    <button onclick={fn _ => t <- get txt; e <- rpc (eval t); set res (show e)}>Evaluate on server</button>
-    <dyn signal={r <- signal res; return <xml>{[r]}</xml>}/>
-
-  </body>
-</xml>
+            <ctextbox source={txt}/>
+            <button onclick={fn _ =>
+                                t <- get txt;
+                                e <- return (MT.parse t);
+                                set res (show e)}>
+              Evaluate
+            </button>
+            <button onclick={fn _ =>
+                                t <- get txt;
+                                e <- rpc (eval t);
+                                set res (show e)}>
+              Evaluate on server
+            </button>
+            <dyn signal={r <- signal res; return <xml>{[r]}</xml>}/>
+          </body>
+        </xml>
+    end
