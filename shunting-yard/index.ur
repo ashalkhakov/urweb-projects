@@ -45,7 +45,7 @@ fun main () =
               {example "2 + 2 * 2"}
               {example "3^4"}
               {example "(2 + 2) * 4"}
-              {example "3 + 4 * 2 / (1 − 5) ^ 2 ^ 3"}
+              {example "3 + 4 * 2 / (1 - 5) ^ 2 ^ 3"}
             </ul>
 
             <ctextbox source={txt}/>
